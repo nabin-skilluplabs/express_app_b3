@@ -1,7 +1,7 @@
 import express from "express";
 import ViteExpress from "vite-express";
 
-import { students } from "./data.js";
+import { getStudents, writeDataToFile } from "./utils.js";
 
 const app = express();
 app.use(express.json());
@@ -10,15 +10,16 @@ app.get("/", (req, res) => {
   res.send("Welcome to express app!");
 });
 
-app.get('/students', (req, res) => {
+app.get('/students',  (req, res) => {
   res.json({
-    data: students
+    data: getStudents()
   });
 });
 
 app.get('/students/:id', (req, res) => {
   const id = req.params.id;
-  const student = students.find(student => student.id == id);
+
+  const student = getStudents().find(student => student.id == id);
 
   if(student) {
     return res.json({data: student});
@@ -30,23 +31,30 @@ app.get('/students/:id', (req, res) => {
 
 app.post('/students', (req, res) => {
   const student = req.body;
-  students.push({id:students.length + 1, ...student});
-  res.json({data: students});
+  const students = getStudents();
+  const newStudent = {id:students.length + 1, ...student};
+  students.push(newStudent);
+  writeDataToFile('./src/server/data.json', students);
+  res.json({data: newStudent});
 });
 
 app.put('/students/:id', (req, res) => {
   const id = req.params.id;
   const student = req.body;
+  const students = getStudents();
   const existing = students.find(student => student.id == id);
 
   if(existing) {
+    let updatedStudent = {};
     const updatedStudents = students.map(item => {
       if(item.id == id) {
-        return {...item, ...student};
+        updatedStudent = {...item, ...student};
+        return updatedStudent;
       }
       return item;
-    })
-    return res.json({data: updatedStudents});
+    });
+    writeDataToFile('./src/server/data.json', updatedStudents);
+    return res.json({data: updatedStudent});
   }
   else {
     return res.status(404).json({error: 'Student not found!'});
@@ -55,11 +63,13 @@ app.put('/students/:id', (req, res) => {
 
 app.delete('/students/:id', (req, res) => {
   const id = req.params.id;
+  const students = getStudents();
   const student = students.find(student => student.id == id);
 
   if(student) {
     const updatedStudents = students.filter(item => item.id != id);
-    return res.json({data: updatedStudents});
+    writeDataToFile('./src/server/data.json', updatedStudents);
+    return res.send('OK');
   }
   else {
     return res.status(404).json({error: 'Student not found!'});
