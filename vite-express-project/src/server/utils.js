@@ -1,4 +1,5 @@
 import fs from 'fs';
+import { STUDENTS_FILE_PATH, SUBJECTS_FILE_PATH } from './constants.js';
 
 export  function readDataFromFile(filePath) {
     const data =  fs.readFileSync(filePath, {encoding: "utf8"});
@@ -6,7 +7,13 @@ export  function readDataFromFile(filePath) {
 }
 
 export function getStudents() {
-    const data =  readDataFromFile('./src/server/data.json');
+    const data =  readDataFromFile(STUDENTS_FILE_PATH);
+    const dataJSON = JSON.parse(data);
+    return dataJSON.data;
+}
+
+export function getSubjects() {
+    const data =  readDataFromFile(SUBJECTS_FILE_PATH);
     const dataJSON = JSON.parse(data);
     return dataJSON.data;
 }
