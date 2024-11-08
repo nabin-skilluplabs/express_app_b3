@@ -1,22 +1,17 @@
 import express from "express";
+import { add, getAll, getById, remove, update } from "../models/student.js";
 
-import { getStudents, writeDataToFile } from "../utils.js";
 const route = express.Router();
-import { STUDENTS_FILE_PATH } from "../constants.js";
 
-const FILE_PATH = STUDENTS_FILE_PATH;
-
-route.get('/', (req, res) => {
+route.get('/', async(req, res) => {
     res.json({
-        data: getStudents()
+        data: await getAll()
     });
 });
 
-route.get('/:id', (req, res) => {
+route.get('/:id', async (req, res) => {
     const id = req.params.id;
-
-    const student = getStudents().find(student => student.id == id);
-
+    const student = await getById(id);
     if (student) {
         return res.json({ data: student });
     }
@@ -25,51 +20,34 @@ route.get('/:id', (req, res) => {
     }
 });
 
-route.post('/', (req, res) => {
+route.post('/', async (req, res) => {
     const student = req.body;
-    const students = getStudents();
-    const newStudent = { id: students[students.length - 1] ? ( students[students.length - 1].id + 1) : 1 , ...student };
-    students.push(newStudent);
-
-    writeDataToFile(FILE_PATH, students);
+    const newStudent = await add(student);
     res.json({ data: newStudent });
 });
 
-route.put('/:id', (req, res) => {
-    const id = req.params.id;
-    const student = req.body;
-    const students = getStudents();
-    const existing = students.find(student => student.id == id);
+route.put('/:id', async(req, res) => {
 
-    if (existing) {
-        let updatedStudent = {};
-        const updatedStudents = students.map(item => {
-            if (item.id == id) {
-                updatedStudent = { ...item, ...student };
-                return updatedStudent;
-            }
-            return item;
-        });
-        writeDataToFile(FILE_PATH, updatedStudents);
+    const id = req.params.id;
+   
+    const student = req.body;
+    try {
+        let updatedStudent = await update({...student, id});
         return res.json({ data: updatedStudent });
     }
-    else {
-        return res.status(404).json({ error: 'Student not found!' });
+    catch(error) {
+        return res.status(404).json({ error: error.message});
     }
 });
 
-route.delete('/:id', (req, res) => {
+route.delete('/:id', async(req, res) => {
     const id = req.params.id;
-    const students = getStudents();
-    const student = students.find(student => student.id == id);
-
-    if (student) {
-        const updatedStudents = students.filter(item => item.id != id);
-        writeDataToFile(FILE_PATH, updatedStudents);
+    try {
+        await remove(id);
         return res.send('OK');
     }
-    else {
-        return res.status(404).json({ error: 'Student not found!' });
+    catch(error) {
+        return res.status(404).json({ error: error.message});
     }
 });
 
